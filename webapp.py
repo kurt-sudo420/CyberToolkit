@@ -3,6 +3,7 @@ import socket
 import re
 import hashlib
 import string
+import secrets
 from pydantic import BaseModel
 
 class HashRequest(BaseModel):
