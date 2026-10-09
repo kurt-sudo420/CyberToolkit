@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Query, Request
 import socket
 import re
+import hashlib
 from pydantic import BaseModel
 
 class HashRequest(BaseModel):
