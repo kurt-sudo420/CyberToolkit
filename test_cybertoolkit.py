@@ -48,3 +48,18 @@ class TestParsePorts:
 
     def test_result_is_sorted(self):
         assert parse_ports("443,22,80") == [22, 80, 443]
+
+    def test_invalid_range(self):
+        assert parse_ports("1000-abc") == []
+
+    def test_invalid_single_port(self):
+        assert parse_ports("abc") == []
+
+    def test_mixed_valid_invalid(self):
+        assert parse_ports("22,80,abc,8080") == []
+
+    def test_large_range(self):
+        assert parse_ports("1-65535") == list(range(1, 65536))
+
+    def test_large_invalid_range(self):
+        assert parse_ports("65536-70000") == []
