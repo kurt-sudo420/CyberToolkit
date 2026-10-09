@@ -1,8 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query, Request
-import httpx
-import secrets
-import hashlib
-import string
+import socket
+import re
 from pydantic import BaseModel
 
 class HashRequest(BaseModel):
@@ -25,11 +23,21 @@ def hash_text(request: HashRequest):
         raise HTTPException(status_code=400, detail='Invalid JSON body')
 
 @app.get('/api/dns')
-def dns_lookup(domain: str = Query(..., regex=r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')):
+def dns_lookup(domain: str = Query(..., pattern=r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')):
     try:
-        response = httpx.get(f'https://{domain}')
-        return {'status': 'success', 'domain': domain, 'status_code': response.status_code}
-    except httpx.RequestError as e:
+        # Validate domain name
+        if not re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', domain):
+            raise HTTPException(status_code=400, detail='Invalid domain name')
+        
+        # Perform DNS lookup using socket
+        addresses = socket.getaddrinfo(domain, None)
+        ip_addresses = sorted({info[4][0] for info in addresses})
+        
+        if not ip_addresses:
+            raise HTTPException(status_code=404, detail='No IP addresses found for this domain')
+        
+        return {'status': 'success', 'domain': domain, 'ip_addresses': ip_addresses}
+    except socket.gaierror as e:
         raise HTTPException(status_code=500, detail=f'DNS lookup failed: {e}')
 
 @app.get('/api/password')

@@ -1,7 +1,6 @@
 from fastapi.testclient import TestClient
 from webapp import app
 import pytest
-import httpx
 from unittest.mock import patch
 import string
 
@@ -18,13 +17,13 @@ def test_hash_text():
     assert response.json()['hash'] == '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
 
 def test_dns_lookup_success():
-    with patch('httpx.get', return_value=httpx.Response(200)):
+    with patch('socket.getaddrinfo', return_value=[(None, None, None, None, ('127.0.0.1', 80))]):
         response = client.get('/api/dns?domain=example.com')
         assert response.status_code == 200
-        assert response.json() == {'status': 'success', 'domain': 'example.com', 'status_code': 200}
+        assert response.json() == {'status': 'success', 'domain': 'example.com', 'ip_addresses': ['127.0.0.1']}
 
 def test_dns_lookup_failure():
-    with patch('httpx.get', side_effect=httpx.RequestError('mock error')):
+    with patch('socket.getaddrinfo', side_effect=socket.gaierror('mock error')):
         response = client.get('/api/dns?domain=example.com')
         assert response.status_code == 500
         assert response.json() == {'detail': 'DNS lookup failed: mock error'}
