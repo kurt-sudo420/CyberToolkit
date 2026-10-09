@@ -28,41 +28,64 @@ body {
     flex-direction: column;
 }
 
-.container {
+/* Updated Dashboard Header */
+.dashboard-header {
+    background-color: var(--dark-bg);
+    color: var(--text-primary);
+    height: 60px;
+    padding: 0 20px;
     display: flex;
-    flex: 1;
-    min-height: calc(100vh - 60px);
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
-.sidebar {
+.dashboard-header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* Updated Dashboard Sidebar */
+.dashboard-sidebar {
     width: 250px;
     background-color: var(--darker-bg);
     padding: 25px 20px;
     height: 100vh;
     position: fixed;
+    top: 60px;
+    left: 0;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
-    z-index: 100;
+    z-index: 90;
     transition: var(--transition);
+    border-right: 1px solid var(--border-color);
 }
 
-.sidebar h2 {
+.dashboard-sidebar h2 {
     color: var(--accent-color);
     margin-bottom: 25px;
     text-align: center;
     font-weight: 500;
     font-size: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 15px;
 }
 
-.sidebar ul {
+.dashboard-sidebar ul {
     list-style-type: none;
     padding: 0;
 }
 
-.sidebar ul li {
+.dashboard-sidebar ul li {
     margin: 15px 0;
 }
 
-.sidebar ul li a {
+.dashboard-sidebar ul li a {
     color: var(--text-primary);
     text-decoration: none;
     display: block;
@@ -71,19 +94,22 @@ body {
     transition: var(--transition);
     font-weight: 400;
     font-size: 1rem;
+    border-left: 3px solid transparent;
 }
 
-.sidebar ul li a:hover,
-.sidebar ul li a.active {
+.dashboard-sidebar ul li a:hover,
+.dashboard-sidebar ul li a.active {
     background-color: var(--card-bg);
     color: var(--accent-color);
+    border-left: 3px solid var(--accent-color);
     transform: translateX(5px);
 }
 
-.main-content {
+/* Main Content Area */
+.dashboard-main {
     flex-grow: 1;
-    padding: 30px;
-    margin-left: 250px;
+    padding: 30px 30px 30px 270px;
+    margin-top: 60px;
     transition: var(--transition);
 }
 
@@ -172,20 +198,22 @@ button:hover {
         flex-direction: column;
     }
     
-    .sidebar {
+    .dashboard-sidebar {
         width: 100%;
         height: auto;
         position: relative;
         padding: 15px;
         margin-bottom: 20px;
+        top: 0;
     }
     
-    .main-content {
+    .dashboard-main {
         margin-left: 0;
         padding: 20px 15px;
+        padding-top: 90px;
     }
     
-    .sidebar ul li a {
+    .dashboard-sidebar ul li a {
         padding: 10px 12px;
         font-size: 0.9rem;
     }
@@ -202,8 +230,9 @@ button:hover {
 }
 
 @media (max-width: 480px) {
-    .main-content {
+    .dashboard-main {
         padding: 15px 10px;
+        padding-top: 90px;
     }
     
     .card {
@@ -211,17 +240,18 @@ button:hover {
         margin-bottom: 15px;
     }
     
-    .sidebar h2 {
+    .dashboard-sidebar h2 {
         font-size: 1.3rem;
         margin-bottom: 20px;
     }
     
-    .sidebar ul li {
+    .dashboard-sidebar ul li {
         margin: 10px 0;
     }
 }
 
 /* Typography */
+
 h1, h2, h3, h4, h5, h6 {
     font-weight: 500;
     line-height: 1.4;
@@ -247,6 +277,7 @@ p {
 }
 
 /* Navigation */
+
 .navbar {
     background-color: var(--darker-bg);
     padding: 15px 20px;
@@ -276,6 +307,7 @@ p {
 }
 
 /* Footer */
+
 footer {
     background-color: var(--darker-bg);
     padding: 20px;
@@ -399,7 +431,7 @@ form {
         margin-bottom: 15px;
     }
     
-    .main-content {
+    .dashboard-main {
         padding: 15px 10px;
     }
 }
