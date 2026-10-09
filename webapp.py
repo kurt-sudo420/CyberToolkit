@@ -50,8 +50,20 @@ def dns_lookup(domain: str = Query(..., pattern=r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
 @app.get('/api/password')
 def generate_password(length: int = Query(..., ge=8)):
     characters = string.ascii_letters + string.digits + string.punctuation
-    password = ''.join(secrets.choice(characters) for _ in range(length))
-    return {'password': password}
+    password_chars = [
+        secrets.choice(string.ascii_letters),
+        secrets.choice(string.digits),
+        secrets.choice(string.punctuation),
+    ]
+
+    password_chars.extend(
+        secrets.choice(characters)
+        for _ in range(length - len(password_chars))
+    )
+
+    secrets.SystemRandom().shuffle(password_chars)
+
+    return {'password': ''.join(password_chars)}
 
 
 # CyberToolkit web dashboard
