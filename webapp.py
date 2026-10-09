@@ -1,3 +1,7 @@
+from pathlib import Path
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
 from fastapi import FastAPI, HTTPException, Query, Request
 import socket
 import re
@@ -48,3 +52,17 @@ def generate_password(length: int = Query(..., ge=8)):
     characters = string.ascii_letters + string.digits + string.punctuation
     password = ''.join(secrets.choice(characters) for _ in range(length))
     return {'password': password}
+
+
+# CyberToolkit web dashboard
+BASE_DIR = Path(__file__).resolve().parent
+
+app.mount(
+    "/static",
+    StaticFiles(directory=BASE_DIR / "static"),
+    name="static",
+)
+
+@app.get("/", include_in_schema=False)
+def dashboard():
+    return FileResponse(BASE_DIR / "templates" / "index.html")
