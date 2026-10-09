@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 import httpx
 import secrets
 import hashlib
@@ -11,8 +11,15 @@ def health_check():
     return {'status': 'ok'}
 
 @app.post('/api/hash')
-def hash_text(text: str):
-    return {'hash': hashlib.sha256(text.encode()).hexdigest()}
+def hash_text(request: Request):
+    try:
+        data = await request.json()
+        text = data.get('text')
+        if not text:
+            raise HTTPException(status_code=400, detail='Missing text field')
+        return {'hash': hashlib.sha256(text.encode()).hexdigest()}
+    except ValueError:
+        raise HTTPException(status_code=400, detail='Invalid JSON body')
 
 @app.get('/api/dns')
 def dns_lookup(domain: str = Query(..., regex=r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')):
