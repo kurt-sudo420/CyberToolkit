@@ -3,6 +3,7 @@ from webapp import app
 import pytest
 from unittest.mock import patch
 import string
+import socket
 
 client = TestClient(app)
 
