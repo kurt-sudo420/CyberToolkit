@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberToolkit Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>CyberToolkit</h2>
+            <ul>
+                <li><a href="#sha256">SHA-256 Hashing</a></li>
+                <li><a href="#dns">DNS Lookup</a></li>
+                <li><a href="#password">Password Generator</a></li>
+            </ul>
+        </div>
+        <div class="main-content">
+            <section id="sha256">
+                <h3>SHA-256 Hashing</h3>
+                <input type="text" id="sha256-input" placeholder="Enter text to hash">
+                <button onclick="hashText()">Hash</button>
+                <div id="sha256-result"></div>
+            </section>
+            <section id="dns">
+                <h3>DNS Lookup</h3>
+                <input type="text" id="dns-input" placeholder="Enter domain">
+                <button onclick="lookupDNS()">Lookup</button>
+                <div id="dns-result"></div>
+            </section>
+            <section id="password">
+                <h3>Secure Password Generator</h3>
+                <input type="number" id="password-length" placeholder="Length" value="20">
+                <button onclick="generatePassword()">Generate</button>
+                <div id="password-result"></div>
+            </section>
+        </div>
+    </div>
+    <script src="/static/app.js"></script>
+</body>
+</html>
