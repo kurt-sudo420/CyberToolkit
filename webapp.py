@@ -3,6 +3,10 @@ import httpx
 import secrets
 import hashlib
 import string
+from pydantic import BaseModel
+
+class HashRequest(BaseModel):
+    text: str
 
 app = FastAPI()
 
@@ -11,10 +15,9 @@ def health_check():
     return {'status': 'ok'}
 
 @app.post('/api/hash')
-def hash_text(request: Request):
+def hash_text(request: HashRequest):
     try:
-        data = await request.json()
-        text = data.get('text')
+        text = request.text
         if not text:
             raise HTTPException(status_code=400, detail='Missing text field')
         return {'hash': hashlib.sha256(text.encode()).hexdigest()}
