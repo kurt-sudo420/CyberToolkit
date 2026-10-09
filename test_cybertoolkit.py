@@ -7,7 +7,6 @@ sockets adds more complexity than it's worth for a project this size.
 Run with:  python -m pytest test_cybertoolkit.py -v
 """
 
-import pytest
 
 from cybertoolkit import parse_ports
 

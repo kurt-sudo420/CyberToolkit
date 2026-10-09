@@ -15,11 +15,9 @@ IMPORTANT - scope of use:
 
 import concurrent.futures
 import hashlib
-import ipaddress
 import secrets
 import socket
 import string
-
 
 # --------------------------------------------------------------------------
 # Port scanner
@@ -198,7 +196,7 @@ def banner_grab():
             s.settimeout(2)
             s.connect((ip, port))
             banner = s.recv(1024).decode(errors="ignore").strip()
-    except socket.timeout:
+    except TimeoutError:
         print("Timed out (no banner received).")
         return
     except ConnectionRefusedError:
