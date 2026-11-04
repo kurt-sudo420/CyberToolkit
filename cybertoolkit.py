@@ -15,7 +15,6 @@ IMPORTANT - scope of use:
 
 import concurrent.futures
 import hashlib
-import ipaddress
 import secrets
 import socket
 import string
@@ -43,22 +42,26 @@ def parse_ports(spec):
     for part in spec.split(","):
         part = part.strip()
         if not part:
-            continue
+            return []
         if "-" in part:
             try:
                 lo, hi = (int(x) for x in part.split("-", 1))
             except ValueError:
+                return []
+            if not (1 <= lo <= 65535 and 1 <= hi <= 65535):
                 return []
             if lo > hi:
                 lo, hi = hi, lo
             ports.update(range(lo, hi + 1))
         else:
             try:
-                ports.add(int(part))
+                port = int(part)
+                if not 1 <= port <= 65535:
+                    return []
+                ports.add(port)
             except ValueError:
                 return []
-    # Keep to the valid TCP port range.
-    return sorted(p for p in ports if 1 <= p <= 65535)
+    return sorted(ports)
 
 
 def check_port(ip, port, timeout=0.5):
@@ -95,12 +98,20 @@ def port_scanner():
     open_ports = []
     # Threaded: a sequential scan of 1024 ports at 0.5s timeout each would
     # take minutes in the worst case. A thread pool overlaps the waiting.
-    with concurrent.futures.ThreadPoolExecutor(max_workers=100) as pool:
-        futures = {pool.submit(check_port, ip, p): p for p in ports}
-        for fut in concurrent.futures.as_completed(futures):
-            result = fut.result()
-            if result is not None:
-                open_ports.append(result)
+    failures = 0
+    with concurrent.futures.ThreadPoolExecutor(max_workers=32) as pool:
+        for start in range(0, len(ports), 128):
+            futures = [pool.submit(check_port, ip, p) for p in ports[start:start + 128]]
+            for fut in concurrent.futures.as_completed(futures):
+                try:
+                    result = fut.result()
+                except OSError:
+                    failures += 1
+                    continue
+                if result is not None:
+                    open_ports.append(result)
+    if failures:
+        print(f"Socket errors prevented checking {failures} port(s).")
 
     if not open_ports:
         print("No open ports found.")
@@ -152,6 +163,9 @@ def password_generator():
     if length < 8:
         print("Minimum length is 8; using 8.")
         length = 8
+    if length > 256:
+        print("Maximum length is 256; using 256.")
+        length = 256
 
     # secrets, not random -- random is not safe for anything security-related.
     chars = string.ascii_letters + string.digits + "!@#$%^&*()-_=+"
@@ -211,7 +225,7 @@ def banner_grab():
         print(f"Unable to grab banner: {e}")
         return
 
-    print(banner if banner else "Connected, but no banner was sent.")
+    print(ascii(banner) if banner else "Connected, but no banner was sent.")
 
 
 # --------------------------------------------------------------------------

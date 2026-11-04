@@ -1,73 +1,41 @@
 # CyberToolkit
 
-A command-line collection of basic network security utilities, written in Python. Built as a hands-on way to work with sockets, hashing, and the everyday building blocks of network security work.
+A hands-on defensive security toolkit with two entry points. The browser lab fingerprints a local file and compares it with a trusted SHA-256 digest. The Python CLI adds network inspection, streaming hashes for large files, and cryptographically random passwords.
 
-## ⚠️ Scope of use
+![The browser lab showing the SHA-256 fingerprint of the sample bytes abc](preview.png)
 
-The **port scanner** and **banner grabber** make network connections to other hosts. Only use them against:
+## Try the file integrity lab
 
-- systems you own, or
-- systems you have **explicit written authorization** to test.
+From the repository root, run:
 
-Scanning or probing hosts without permission may violate network policy (including university acceptable-use policy) and, in many jurisdictions, the law. When in doubt, don't run it.
+```sh
+python -m http.server 8000 --bind 127.0.0.1 --directory docs
+```
 
-## Tools
+Open [the local lab](http://127.0.0.1:8000/) and select **Try sample**. The three ASCII bytes `abc` produce the following SHA-256 digest:
 
-| # | Tool | What it does |
-|---|------|--------------|
-| 1 | Port Scanner | Checks which TCP ports are open on a host. Supports port ranges and runs concurrently. |
-| 2 | SHA-256 File Hash | Computes the SHA-256 digest of a file, read in chunks so large files work. |
-| 3 | Password Generator | Generates a cryptographically secure random password of a chosen length. |
-| 4 | DNS Lookup | Resolves a domain to all of its IP addresses. |
-| 5 | Banner Grabber | Connects to a host:port and prints any service banner returned. |
+```text
+ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
+```
 
-## Usage
+Paste that value into **Expected SHA-256** and rerun the sample to see a match. Change one digit to see a mismatch. To check an actual download, select the file, enter the digest from its publisher and choose **Hash file**. The page processes files up to 32 MiB in memory. It loads its assets locally and its content security policy blocks outbound script connections.
 
-```bash
+## Run the CLI
+
+```sh
 python cybertoolkit.py
 ```
 
-Then choose a tool from the menu. Example scan:
+| Menu | Tool | Behavior |
+| --- | --- | --- |
+| 1 | Port scanner | Checks TCP connections to one IPv4 target with bounded concurrency. Port labels suggest common services. |
+| 2 | File hash | Reads a file in chunks and prints its SHA-256 digest. |
+| 3 | Password generator | Uses Python’s `secrets` module. Defaults to 20 characters and supports 8–256. |
+| 4 | DNS lookup | Lists the addresses returned by the system resolver. |
+| 5 | Banner grabber | Reads up to 1,024 bytes with a timeout and escapes terminal control characters. |
 
-```
-Choice: 1
-Enter IP or hostname: scanme.nmap.org
-Ports [Enter for common ports]: 20-100
+Use network probes only on systems you own or have explicit permission to test. For a reproducible exercise, leave the local lab server running and scan `127.0.0.1` on port `8000` from a second terminal. An open port shows that a connection succeeded. It does not establish a vulnerability.
 
-Scanning 45.33.32.156 (81 ports)...
+## Verification
 
-Open ports:
-     22/tcp  SSH
-     80/tcp  HTTP
-```
-
-(`scanme.nmap.org` is a host Nmap provides specifically for testing — one of the few you can legally scan without prior arrangement.)
-
-## Design notes
-
-A few choices worth calling out, since they're the difference between a tutorial script and something considered:
-
-- **Threaded scanning.** A sequential scan of 1,000 ports at a 0.5s timeout could take minutes when ports are filtered. A `ThreadPoolExecutor` overlaps the waiting, so the scan is bounded by the slowest port rather than the sum of all of them.
-- **`secrets`, not `random`.** The password generator uses `secrets.choice`. Python's `random` module is a pseudo-random generator and is unsafe for anything security-related.
-- **Chunked hashing.** Files are read 64 KB at a time rather than loaded whole, so hashing a large file doesn't depend on it fitting in memory.
-- **Specific exception handling.** Each tool catches the errors it actually expects (`ConnectionRefusedError`, `socket.timeout`, `FileNotFoundError`) and reports them distinctly, rather than a bare `except` that hides what went wrong and swallows Ctrl+C.
-- **Hostnames resolved once.** The scanner resolves a hostname to an IP before the loop, so a bad hostname fails immediately instead of erroring on every port.
-
-## Tests
-
-```bash
-python -m pytest test_cybertoolkit.py -v
-```
-
-The tests cover the port-specification parser (ranges, lists, dedup, invalid input). The network functions are verified manually against a local listener.
-
-## Requirements
-
-Python 3.8+. Standard library only — no dependencies.
-
-## Possible extensions
-
-- UDP scanning (this only does TCP)
-- Export results to JSON or CSV
-- Concurrent banner grabbing across multiple ports
-- Reverse DNS lookups
+Run `python -m unittest discover -v` from the repository root. The tests use local inputs and a simulated remote banner. The CLI and tests require Python 3.8+ and use the standard library. The web lab requires a modern browser with Web Crypto on HTTPS or localhost.
