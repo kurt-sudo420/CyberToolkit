@@ -36,7 +36,7 @@ python cybertoolkit.py
 
 ## Run the web dashboard
 
-The dashboard puts SHA-256 hashing, DNS lookup and password generation behind a local web interface styled to match [my portfolio](https://kurt-sudo420.github.io/portfolio/). It needs FastAPI and Uvicorn:
+The dashboard puts SHA-256 hashing, DNS lookup and password generation behind a local web interface with a navy, circuit-board look. It needs FastAPI and Uvicorn:
 
 ```sh
 python -m pip install -r requirements.txt

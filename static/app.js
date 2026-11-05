@@ -67,7 +67,7 @@ if ("IntersectionObserver" in window) {
       navLinks.forEach((a) => a.classList.toggle("active", a.hash === `#${entry.target.id}`));
     }
   }, { rootMargin: "-45% 0px -50% 0px" });
-  ["hash", "dns", "password"].forEach((id) => io.observe($(id)));
+  ["top", "hash", "dns", "password"].forEach((id) => io.observe($(id)));
 }
 
 async function checkHealth() {
