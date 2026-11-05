@@ -1,6 +1,5 @@
-fastapi
-uvicorn
-httpx
-pytest
-python-dotenv
-secrets
+# Only needed for the web dashboard (webapp.py). The CLI uses the standard library.
+fastapi>=0.110
+uvicorn>=0.29
+# Required by fastapi.testclient for test_webapp.py
+httpx>=0.27

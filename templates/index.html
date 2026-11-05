@@ -1,44 +1,176 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberToolkit Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#050608">
+<meta name="description" content="CyberToolkit: a local security workbench for SHA-256 hashing, DNS lookups and password generation.">
+<title>CyberToolkit | Kurt Sooknanan</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/static/fonts/archivo-wdth.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/style.css">
+<script src="/static/app.js" defer></script>
 </head>
 <body>
-    <div class="container">
-        <div class="sidebar">
-            <h2>CyberToolkit</h2>
-            <ul>
-                <li><a href="#sha256">SHA-256 Hashing</a></li>
-                <li><a href="#dns">DNS Lookup</a></li>
-                <li><a href="#password">Password Generator</a></li>
-            </ul>
-        </div>
-        <div class="main-content">
-            <section id="sha256">
-                <h3>SHA-256 Hashing</h3>
-                <label for="sha256-input">Text to hash:</label>
-                <input type="text" id="sha256-input" placeholder="Enter text to hash" aria-label="Enter text to hash">
-                <span class="helper-text">Enter any text to generate its SHA-256 hash</span>
-                <button onclick="hashText()" id="hash-button">Hash</button>
-                <div id="sha256-result"></div>
-            </section>
-            <section id="dns">
-                <h3>DNS Lookup</h3>
-                <input type="text" id="dns-input" placeholder="Enter domain">
-                <button onclick="lookupDNS()">Lookup</button>
-                <div id="dns-result"></div>
-            </section>
-            <section id="password">
-                <h3>Secure Password Generator</h3>
-                <input type="number" id="password-length" placeholder="Length" value="20">
-                <button onclick="generatePassword()">Generate</button>
-                <div id="password-result"></div>
-            </section>
-        </div>
+<a href="#main" class="skip-link">Skip to tools</a>
+
+<header class="site-header" id="siteHeader">
+  <div class="nav-wrap">
+    <a href="/" class="brand" aria-label="CyberToolkit home">
+      <span class="brand-mark" aria-hidden="true">CT</span>
+      <span class="brand-name">CyberToolkit</span>
+    </a>
+    <nav aria-label="Tools">
+      <ul class="nav-links">
+        <li><a href="#hash">Hash</a></li>
+        <li><a href="#dns">DNS</a></li>
+        <li><a href="#password">Password</a></li>
+      </ul>
+    </nav>
+    <p class="nav-status" id="apiStatus" role="status"><span class="pulse-dot" aria-hidden="true"></span><span class="nav-status-text">Checking API</span></p>
+  </div>
+</header>
+
+<main id="main">
+  <div class="ambient" aria-hidden="true"></div>
+
+  <section class="hero wrap" aria-labelledby="heroTitle">
+    <p class="kicker">Local security workbench</p>
+    <h1 id="heroTitle"><span class="line">Cyber</span><span class="line">Toolkit</span></h1>
+    <div class="hero-foot">
+      <p class="lede">Fingerprint text and files, resolve a domain, and generate a strong password. Everything runs on your machine; files never leave the browser.</p>
+      <ul class="hero-facts" aria-label="Toolkit facts">
+        <li><b>SHA-256</b><span>Text on the API, files with Web Crypto</span></li>
+        <li><b>getaddrinfo</b><span>Every A and AAAA record</span></li>
+        <li><b>secrets</b><span>Cryptographic randomness, 8 to 256 characters</span></li>
+      </ul>
     </div>
-    <script src="/static/app.js"></script>
+  </section>
+
+  <!-- Hash workbench -->
+  <section class="tool wrap" id="hash" aria-labelledby="hashTitle">
+    <div class="frame bench">
+      <div class="bench-input">
+        <div class="tool-head">
+          <h2 id="hashTitle">Fingerprint</h2>
+          <p>Hash text as you type, or check a download against the digest its publisher lists.</p>
+        </div>
+
+        <div class="segmented" role="tablist" aria-label="Input type">
+          <button type="button" role="tab" id="tabText" aria-controls="paneText" aria-selected="true">Text</button>
+          <button type="button" role="tab" id="tabFile" aria-controls="paneFile" aria-selected="false" tabindex="-1">File</button>
+        </div>
+
+        <div class="pane" id="paneText" role="tabpanel" aria-labelledby="tabText">
+          <label for="hashText">Text to hash</label>
+          <textarea id="hashText" rows="4" spellcheck="false" autocomplete="off" placeholder="Paste or type anything">abc</textarea>
+          <p class="hint" id="hashTextHint">Encoded as UTF-8 and hashed by the server.</p>
+        </div>
+
+        <div class="pane" id="paneFile" role="tabpanel" aria-labelledby="tabFile" hidden>
+          <label class="drop" for="hashFile" id="dropZone">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>
+            <span class="drop-title" id="dropTitle">Drop a file or choose one</span>
+            <span class="hint">Up to 256 MB. Hashed in this browser, never uploaded.</span>
+            <input type="file" id="hashFile" class="sr-only">
+          </label>
+        </div>
+
+        <label for="expected">Expected SHA-256 <span class="opt">optional</span></label>
+        <input id="expected" type="text" inputmode="text" spellcheck="false" autocomplete="off" autocapitalize="none" placeholder="Paste a 64-character digest to compare">
+      </div>
+
+      <div class="bench-output" aria-labelledby="readoutTitle">
+        <div class="readout-head">
+          <h3 id="readoutTitle">Digest</h3>
+          <span class="state state--muted" id="verdict">Waiting</span>
+        </div>
+        <div class="signature" id="signature" aria-hidden="true"></div>
+        <output class="digest" id="digest" for="hashText hashFile" aria-live="polite"></output>
+        <div class="readout-foot">
+          <p class="meta" id="digestMeta">Type above to see the digest.</p>
+          <button type="button" class="btn btn--ghost btn--sm" id="copyDigest" disabled>Copy digest</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap pair">
+    <!-- DNS -->
+    <section class="tool frame card" id="dns" aria-labelledby="dnsTitle">
+      <div class="tool-head">
+        <h2 id="dnsTitle">DNS lookup</h2>
+        <p>List every address your system resolver returns for a domain.</p>
+      </div>
+      <form class="inline-form" id="dnsForm" novalidate>
+        <label for="dnsInput" class="sr-only">Domain</label>
+        <input id="dnsInput" type="text" inputmode="url" spellcheck="false" autocomplete="off" autocapitalize="none" placeholder="example.com" required>
+        <button type="submit" class="btn btn--primary" id="dnsButton">Look up</button>
+      </form>
+      <div class="result" id="dnsResult" aria-live="polite">
+        <p class="empty">Try <button type="button" class="text-link" data-domain="umb.edu">umb.edu</button> or <button type="button" class="text-link" data-domain="github.com">github.com</button>.</p>
+      </div>
+    </section>
+
+    <!-- Password -->
+    <section class="tool frame card" id="password" aria-labelledby="pwTitle">
+      <div class="tool-head">
+        <h2 id="pwTitle">Password</h2>
+        <p>Letters, digits and shell-safe symbols, with at least one of each.</p>
+      </div>
+      <div class="pw-box">
+        <output class="pw" id="pwOutput" aria-live="polite" aria-label="Generated password"></output>
+        <div class="pw-actions">
+          <button type="button" class="icon-btn" id="pwReveal" aria-pressed="true" aria-label="Hide password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+          <button type="button" class="icon-btn" id="pwCopy" aria-label="Copy password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="strength" aria-hidden="true"><i id="strengthBar"></i></div>
+      <p class="meta" id="pwMeta">Generating.</p>
+      <div class="slider-row">
+        <label for="pwLength">Length</label>
+        <input type="range" id="pwLength" min="8" max="64" value="20">
+        <input type="number" id="pwLengthNum" min="8" max="256" value="20" aria-label="Length in characters">
+      </div>
+      <button type="button" class="btn btn--violet" id="pwGenerate">Generate password</button>
+    </section>
+  </div>
+
+  <section class="wrap cli" aria-labelledby="cliTitle">
+    <div class="cli-copy">
+      <h2 id="cliTitle">Need the network tools?</h2>
+      <p>The port scanner and banner grabber stay in the command line, where they only run when you launch them. Use them on systems you own or have written permission to test.</p>
+    </div>
+    <div class="frame term-frame">
+      <div class="term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+      <pre class="term"><span class="p">$</span> <span class="o">python cybertoolkit.py</span>
+
+<span class="o">CyberToolkit</span>
+<span class="c">---------------------</span>
+<span class="c">1. Port Scanner</span>
+<span class="c">2. SHA-256 File Hash</span>
+<span class="c">3. Password Generator</span>
+<span class="c">4. DNS Lookup</span>
+<span class="c">5. Banner Grabber</span>
+<span class="c">6. Quit</span></pre>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="footer-mark" aria-hidden="true">CyberToolkit</p>
+    <div class="footer-bottom">
+      <p>Built by <a href="https://kurt-sudo420.github.io/portfolio/">Kurt Sooknanan</a></p>
+      <p><a href="https://github.com/kurt-sudo420/CyberToolkit">Source on GitHub</a> / MIT license</p>
+    </div>
+  </div>
+</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
