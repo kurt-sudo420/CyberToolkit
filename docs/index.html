@@ -1,41 +1,178 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" class="no-js">
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#102820">
-  <meta name="description" content="A hands-on defensive security lab. Fingerprint files on your device and explore five Python security utilities.">
-  <title>CyberToolkit • File integrity lab</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="lab.js" defer></script>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://cloudflare-dns.com; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#020A3A">
+<meta name="description" content="CyberToolkit: a security workbench for SHA-256 hashing, DNS lookups and password generation that runs in your browser.">
+<title>CyberToolkit | Security workbench</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/exo2-wght.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
 </head>
 <body>
-<a class="skip" href="#main">Skip to workspace</a>
-<header><div class="bar"><b><span class="mark" aria-hidden="true">⌁</span> CyberToolkit</b><a href="https://github.com/kurt-sudo420/CyberToolkit">Source code ↗</a></div></header>
+<a href="#hash" class="skip-link">Skip to tools</a>
+
+<header class="site-header" id="siteHeader">
+  <div class="nav-wrap">
+    <a href="#top" class="brand" aria-label="CyberToolkit home">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <path d="M30 9H14L8 15v10l6 6h16" fill="none" stroke="url(#bm)" stroke-width="3.4" stroke-linejoin="round"/>
+        <path d="M21 16h11M26.5 16v15" fill="none" stroke="#7FE4FF" stroke-width="3.4" stroke-linecap="square"/>
+        <defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3FE0F0"/><stop offset="1" stop-color="#1E7BFF"/></linearGradient></defs>
+      </svg>
+      <span class="brand-name">CyberToolkit</span>
+    </a>
+    <nav aria-label="Sections">
+      <ul class="nav-links">
+        <li><a href="#top" class="active">Home</a></li>
+        <li><a href="#hash">Hash</a></li>
+        <li><a href="#dns">DNS</a></li>
+        <li><a href="#password">Password</a></li>
+      </ul>
+    </nav>
+    <p class="nav-status" id="apiStatus" role="status"><span class="pulse-dot" aria-hidden="true"></span><span class="nav-status-text">Starting</span></p>
+  </div>
+</header>
+
 <main id="main">
-  <section class="intro">
-    <div><p class="tag">FIELD MANUAL &nbsp;/&nbsp; LAB 01</p><h1>File integrity<span>.</span></h1>
-    <p class="lede">Fingerprint a file and check its contents against a trusted SHA-256 digest. Every byte stays on your device.</p></div>
-    <div class="plate" aria-hidden="true"><div class="rings"><i></i></div><small>FIG. 01 &nbsp; / &nbsp; BYTE SIGNATURE</small></div>
-  </section>
-  <section class="bench" aria-label="File integrity workspace">
-    <div class="panel"><p class="tag">01 &nbsp;/&nbsp; INPUT</p><h2>Select evidence</h2>
-      <label for="file">Local file <small>Up to 32 MiB</small></label><input type="file" id="file">
-      <label for="expected">Expected SHA-256 <small>Optional</small></label>
-      <input id="expected" type="text" placeholder="64 hexadecimal characters" spellcheck="false" autocomplete="off" autocapitalize="none">
-      <div class="actions"><button id="hash" type="button">Hash file →</button><button id="sample" type="button">Try sample</button></div>
-      <noscript>Enable JavaScript to use the local hashing tool.</noscript>
+  <section class="hero" id="top" aria-labelledby="heroTitle">
+    <div class="hero-copy">
+      <h1 id="heroTitle">Trust <span class="small-word">but</span> verify</h1>
+      <p class="lede">Fingerprint files, resolve domains and generate strong passwords in one place. Hashing and passwords run in your browser, so your files never leave your machine.</p>
+      <div class="btn-row">
+        <a class="btn btn--primary" href="#hash">Hash a file</a>
+        <a class="btn btn--light" href="#password">Make a password</a>
+      </div>
     </div>
-    <div class="panel output"><p class="tag">02 &nbsp;/&nbsp; READOUT</p><h2>Digest report</h2>
-      <div role="status" aria-live="polite"><strong id="state">Awaiting input</strong><p id="detail">Select a file or try the three-byte sample “abc”.</p><code id="digest"></code></div>
-      <p class="note">A match confirms the bytes agree. Get the reference digest from a publisher or another trusted channel.</p>
+    <div class="hero-art-wrap">
+      <svg class="hero-art" viewBox="0 0 660 470" role="img" aria-labelledby="artTitle" xmlns="http://www.w3.org/2000/svg"><title id="artTitle">An isometric tablet with floating panels for hashing, DNS records and a password</title><defs><linearGradient id="beam" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#3FC8FF" stop-opacity=".55"/><stop offset="1" stop-color="#3FC8FF" stop-opacity="0"/></linearGradient><linearGradient id="screen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7B5CFF"/><stop offset="1" stop-color="#3A2BB5"/></linearGradient><linearGradient id="teal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4AF2E4" stop-opacity=".95"/><stop offset="1" stop-color="#14B8C8" stop-opacity=".85"/></linearGradient><linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5BC8FF" stop-opacity=".95"/><stop offset="1" stop-color="#1E7BFF" stop-opacity=".85"/></linearGradient><radialGradient id="pool" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#2FA8FF" stop-opacity=".45"/><stop offset="1" stop-color="#2FA8FF" stop-opacity="0"/></radialGradient></defs><ellipse cx="330" cy="330" rx="270" ry="110" fill="url(#pool)"/><rect class="beam" x="262" y="60" width="10" height="190" fill="url(#beam)"/><rect class="beam" x="284" y="20" width="6" height="230" fill="url(#beam)"/><rect class="beam" x="306" y="0" width="14" height="250" fill="url(#beam)"/><rect class="beam" x="338" y="40" width="8" height="210" fill="url(#beam)"/><rect class="beam" x="360" y="5" width="12" height="245" fill="url(#beam)"/><rect class="beam" x="388" y="70" width="6" height="180" fill="url(#beam)"/><rect class="beam" x="408" y="50" width="10" height="200" fill="url(#beam)"/><g transform="matrix(18.187 10.500 -18.187 10.500 330 145.80)"><rect x="-3" y="-2" width="16" height="19" fill="none" stroke="#7FD8FF" stroke-opacity=".35" stroke-width="0.05"/></g><g transform="matrix(18.187 10.500 -18.187 10.500 330 53.40)"><rect x="-1.5" y="2" width="5.0" height="5" fill="none" stroke="#7FD8FF" stroke-opacity=".35" stroke-width="0.05"/></g><g transform="matrix(18.187 10.500 -18.187 10.500 330 19.80)"><rect x="6.5" y="-1.5" width="5.0" height="4.5" fill="none" stroke="#7FD8FF" stroke-opacity=".35" stroke-width="0.05"/></g><g><polygon points="75.4,285.4 257.3,390.4 257.3,402.0 75.4,297.0" fill="#AEB6EC"/><polygon points="511.9,243.4 257.3,390.4 257.3,402.0 511.9,255.0" fill="#8790D6"/><g transform="matrix(18.187 10.500 -18.187 10.500 330 138.45)"><rect x="0" y="0" width="10" height="14" rx="0.25" fill="#EEF1FF"/><rect x="0.6" y="0.6" width="8.8" height="12.8" rx="0.2" fill="url(#screen)"/><rect x="1.2" y="1.2" width="5" height="0.22" rx="0.11" fill="#B9A8FF" fill-opacity=".55"/><rect x="1.2" y="1.9" width="3.5" height="0.22" rx="0.11" fill="#B9A8FF" fill-opacity=".55"/><rect x="1.2" y="2.6" width="6" height="0.22" rx="0.11" fill="#B9A8FF" fill-opacity=".55"/><rect x="1.2" y="3.3" width="4.2" height="0.22" rx="0.11" fill="#B9A8FF" fill-opacity=".55"/><rect x="1.2" y="4.0" width="2.8" height="0.22" rx="0.11" fill="#B9A8FF" fill-opacity=".55"/></g></g><g class="float f2"><polygon points="304.5,197.2 391.8,247.6 391.8,255.0 304.5,204.6" fill="#1559C9"/><polygon points="482.8,195.1 391.8,247.6 391.8,255.0 482.8,202.5" fill="#0E3E99"/><g transform="matrix(18.187 10.500 -18.187 10.500 330 81.75)"><rect x="4.8" y="1.2" width="4.8" height="5.0" rx="0.25" fill="url(#blue)"/><rect x="5.8" y="2.00" width="3.2" height="0.42" rx="0.21" fill="#E8F6FF" fill-opacity=".8"/><circle cx="5.4" cy="2.21" r="0.2" fill="#0B2A7A"/><rect x="5.8" y="3.05" width="2.4" height="0.42" rx="0.21" fill="#E8F6FF" fill-opacity=".8"/><circle cx="5.4" cy="3.26" r="0.2" fill="#0B2A7A"/><rect x="5.8" y="4.10" width="3.0" height="0.42" rx="0.21" fill="#E8F6FF" fill-opacity=".8"/><circle cx="5.4" cy="4.31" r="0.2" fill="#0B2A7A"/><rect x="5.8" y="5.15" width="2.0" height="0.42" rx="0.21" fill="#E8F6FF" fill-opacity=".8"/><circle cx="5.4" cy="5.36" r="0.2" fill="#0B2A7A"/></g></g><g class="float f1"><polygon points="230.0,185.7 319.1,237.2 319.1,244.5 230.0,193.1" fill="#0F95A3"/><polygon points="406.4,186.8 319.1,237.2 319.1,244.5 406.4,194.1" fill="#0B6E7B"/><g transform="matrix(18.187 10.500 -18.187 10.500 330 109.05)"><rect x="0.9" y="1.6" width="4.8999999999999995" height="4.800000000000001" rx="0.25" fill="url(#teal)"/><rect x="1.40" y="3.40" width="0.26" height="2.20" fill="#062A55" fill-opacity=".75"/><rect x="1.82" y="4.50" width="0.26" height="1.10" fill="#062A55" fill-opacity=".75"/><rect x="2.24" y="2.60" width="0.26" height="3.00" fill="#062A55" fill-opacity=".75"/><rect x="2.66" y="3.80" width="0.26" height="1.80" fill="#062A55" fill-opacity=".75"/><rect x="3.08" y="5.00" width="0.26" height="0.60" fill="#062A55" fill-opacity=".75"/><rect x="3.50" y="3.00" width="0.26" height="2.60" fill="#062A55" fill-opacity=".75"/><rect x="3.92" y="2.40" width="0.26" height="3.20" fill="#062A55" fill-opacity=".75"/><rect x="4.34" y="4.20" width="0.26" height="1.40" fill="#062A55" fill-opacity=".75"/><rect x="4.76" y="3.60" width="0.26" height="2.00" fill="#062A55" fill-opacity=".75"/><rect x="5.18" y="4.70" width="0.26" height="0.90" fill="#062A55" fill-opacity=".75"/></g></g><g class="float f3"><polygon points="133.6,265.5 239.1,326.4 239.1,332.7 133.6,271.8" fill="#0F95A3"/><polygon points="304.5,288.6 239.1,326.4 239.1,332.7 304.5,294.9" fill="#0B6E7B"/><g transform="matrix(18.187 10.500 -18.187 10.500 330 118.50)"><rect x="1.6" y="8.8" width="5.800000000000001" height="3.5999999999999996" rx="0.25" fill="url(#teal)"/><circle cx="2.40" cy="10.2" r="0.24" fill="#062A55"/><circle cx="3.15" cy="10.2" r="0.24" fill="#062A55"/><circle cx="3.90" cy="10.2" r="0.24" fill="#062A55"/><circle cx="4.65" cy="10.2" r="0.24" fill="#062A55"/><circle cx="5.40" cy="10.2" r="0.24" fill="#062A55"/><circle cx="6.15" cy="10.2" r="0.24" fill="#062A55"/><rect x="2.1" y="11.1" width="4.2" height="0.36" rx="0.18" fill="#062A55" fill-opacity=".5"/></g></g><g class="float f2"><polygon points="428.2,74.4 464.6,95.4 464.6,122.7 428.2,101.7" fill="#18A7B6"/><polygon points="501.0,74.4 464.6,95.4 464.6,122.7 501.0,101.7" fill="#0F7E8C"/><g transform="matrix(18.187 10.500 -18.187 10.500 330 17.70)"><rect x="5.4" y="-2.0" width="2.0" height="2.0" rx="0.25" fill="#56F0E3"/><path d="M6.4 -1.6 L7.1 -1.3 V-0.75 C7.1 -0.3 6.8 0.0 6.4 0.2 C6.0 0.0 5.7 -0.3 5.7 -0.75 V-1.3 Z" fill="#0B2A7A" fill-opacity=".85"/><path d="M6.08 -0.75 L6.32 -0.5 L6.75 -1.0" stroke="#7FFFF1" stroke-width="0.12" fill="none"/></g></g><g class="float f3"><polygon points="180.0,168.0 175.8,172.5 175.6,178.6 169.5,178.8 165.0,183.0 160.5,178.8 154.4,178.6 154.2,172.5 150.0,168.0 154.2,163.5 154.4,157.4 160.5,157.2 165.0,153.0 169.5,157.2 175.6,157.4 175.8,163.5" fill="#2F8BFF"/><circle cx="165" cy="168" r="5.2" fill="#03104F"/></g><g class="float f1"><polygon points="585.0,150.0 579.9,155.1 580.6,162.2 573.4,162.8 569.3,168.7 563.4,164.6 556.5,166.5 554.6,159.5 548.1,156.5 551.2,150.0 548.1,143.5 554.6,140.5 556.5,133.5 563.4,135.4 569.3,131.3 573.4,137.2 580.6,137.8 579.9,144.9" fill="#8B6CFF"/><circle cx="566" cy="150" r="6.6" fill="#03104F"/></g><circle cx="118" cy="118" r="7" fill="none" stroke="#E04CFF" stroke-width="2.4"/><rect x="548" y="210" width="10" height="10" fill="#F5C842" transform="rotate(30 553 215)"/><circle cx="520" cy="300" r="5" fill="none" stroke="#3FE0F0" stroke-width="2"/></svg>
     </div>
   </section>
-  <section class="manual"><p class="tag">FIELD NOTES &nbsp;/&nbsp; PYTHON CLI</p><h2>Inside the toolkit</h2>
-    <div class="rows"><article><b>01–02 / Inspect</b><p>Check TCP ports and read escaped service banners on systems you have permission to test.</p></article>
-    <article><b>03–04 / Protect</b><p>Hash large files in chunks or generate a password with Python’s cryptographic random source.</p></article>
-    <article><b>05 / Resolve</b><p>Look up IPv4 and IPv6 addresses through your system resolver.</p></article></div>
+
+  <!-- Hash workbench -->
+  <section class="tool wrap" id="hash" aria-labelledby="hashTitle">
+    <div class="card bench">
+      <div class="bench-input">
+        <div class="tool-head">
+          <h2 id="hashTitle">Fingerprint</h2>
+          <p>Hash text as you type, or check a download against the digest its publisher lists.</p>
+        </div>
+
+        <div class="segmented" role="tablist" aria-label="Input type">
+          <button type="button" role="tab" id="tabText" aria-controls="paneText" aria-selected="true">Text</button>
+          <button type="button" role="tab" id="tabFile" aria-controls="paneFile" aria-selected="false" tabindex="-1">File</button>
+        </div>
+
+        <div class="pane" id="paneText" role="tabpanel" aria-labelledby="tabText">
+          <label for="hashText">Text to hash</label>
+          <textarea id="hashText" rows="4" spellcheck="false" autocomplete="off" placeholder="Paste or type anything">abc</textarea>
+          <p class="hint">Encoded as UTF-8 and hashed in your browser.</p>
+        </div>
+
+        <div class="pane" id="paneFile" role="tabpanel" aria-labelledby="tabFile" hidden>
+          <label class="drop" for="hashFile" id="dropZone">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>
+            <span class="drop-title" id="dropTitle">Drop a file or choose one</span>
+            <span class="hint">Up to 256 MB. Hashed in this browser, never uploaded.</span>
+            <input type="file" id="hashFile" class="sr-only">
+          </label>
+        </div>
+
+        <label for="expected">Expected SHA-256 <span class="opt">optional</span></label>
+        <input id="expected" type="text" spellcheck="false" autocomplete="off" autocapitalize="none" placeholder="Paste a 64-character digest to compare">
+      </div>
+
+      <div class="bench-output">
+        <div class="readout-head">
+          <h3>Digest</h3>
+          <span class="state state--muted" id="verdict">Waiting</span>
+        </div>
+        <div class="signature" id="signature" aria-hidden="true"></div>
+        <output class="digest" id="digest" for="hashText hashFile" aria-live="polite"></output>
+        <div class="readout-foot">
+          <p class="meta" id="digestMeta">Type above to see the digest.</p>
+          <button type="button" class="btn btn--outline btn--sm" id="copyDigest" disabled>Copy digest</button>
+        </div>
+      </div>
+    </div>
   </section>
-</main><footer>CyberToolkit &nbsp;/&nbsp; Defensive security field manual</footer>
-</body></html>
+
+  <div class="wrap pair">
+    <!-- DNS -->
+    <section class="tool card" id="dns" aria-labelledby="dnsTitle">
+      <div class="tool-head">
+        <h2 id="dnsTitle">DNS lookup</h2>
+        <p id="dnsBlurb">List the IPv4 and IPv6 addresses for a domain.</p>
+      </div>
+      <form class="inline-form" id="dnsForm" novalidate>
+        <label for="dnsInput" class="sr-only">Domain</label>
+        <input id="dnsInput" type="text" inputmode="url" spellcheck="false" autocomplete="off" autocapitalize="none" placeholder="example.com" required>
+        <button type="submit" class="btn btn--primary" id="dnsButton">Look up</button>
+      </form>
+      <div class="result" id="dnsResult" aria-live="polite">
+        <p class="empty">Try <button type="button" class="text-link" data-domain="umb.edu">umb.edu</button> or <button type="button" class="text-link" data-domain="github.com">github.com</button>.</p>
+      </div>
+    </section>
+
+    <!-- Password -->
+    <section class="tool card" id="password" aria-labelledby="pwTitle">
+      <div class="tool-head">
+        <h2 id="pwTitle">Password</h2>
+        <p>Letters, digits and shell-safe symbols, with at least one of each.</p>
+      </div>
+      <div class="pw-box">
+        <output class="pw" id="pwOutput" aria-live="polite" aria-label="Generated password"></output>
+        <div class="pw-actions">
+          <button type="button" class="icon-btn" id="pwReveal" aria-pressed="true" aria-label="Hide password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+          <button type="button" class="icon-btn" id="pwCopy" aria-label="Copy password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="strength" aria-hidden="true"><i id="strengthBar"></i></div>
+      <p class="meta" id="pwMeta">Generating.</p>
+      <div class="slider-row">
+        <label for="pwLength">Length</label>
+        <input type="range" id="pwLength" min="8" max="64" value="20">
+        <input type="number" id="pwLengthNum" min="8" max="256" value="20" aria-label="Length in characters">
+      </div>
+      <button type="button" class="btn btn--light" id="pwGenerate">Generate password</button>
+    </section>
+  </div>
+
+  <section class="wrap cli" aria-labelledby="cliTitle">
+    <div class="cli-copy">
+      <h2 id="cliTitle">Need the network tools?</h2>
+      <p>The port scanner and banner grabber stay in the command line, where they only run when you launch them. Use them on systems you own or have written permission to test.</p>
+    </div>
+    <div class="card term-frame">
+      <div class="term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+      <pre class="term"><span class="p">$</span> <span class="o">python cybertoolkit.py</span>
+
+<span class="o">CyberToolkit</span>
+<span class="c">---------------------</span>
+<span class="c">1. Port Scanner</span>
+<span class="c">2. SHA-256 File Hash</span>
+<span class="c">3. Password Generator</span>
+<span class="c">4. DNS Lookup</span>
+<span class="c">5. Banner Grabber</span>
+<span class="c">6. Quit</span></pre>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-bottom">
+    <p>CyberToolkit, built by <a href="https://kurt-sudo420.github.io/portfolio/">Kurt Sooknanan</a></p>
+    <p><a href="https://github.com/kurt-sudo420/CyberToolkit">Source on GitHub</a> / MIT license</p>
+  </div>
+</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

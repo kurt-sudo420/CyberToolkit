@@ -1,10 +1,31 @@
 "use strict";
 
+/*
+ * CyberToolkit web dashboard.
+ *
+ * Runs as a static page (GitHub Pages) or behind webapp.py. Hashing and
+ * password generation always happen in the browser, so nothing you type
+ * or drop here is sent anywhere. DNS needs a resolver: the local API's
+ * system resolver when webapp.py is running, otherwise Cloudflare's
+ * DNS-over-HTTPS JSON endpoint.
+ */
+
 document.documentElement.classList.remove("no-js");
 
 const $ = (id) => document.getElementById(id);
 const MAX_FILE_BYTES = 256 * 1024 * 1024;
-const PASSWORD_ALPHABET = 76; // 26 lower + 26 upper + 10 digits + 14 symbols
+const MAX_TEXT_CHARS = 1_000_000;
+const DOH_URL = "https://cloudflare-dns.com/dns-query";
+
+// Same character classes as webapp.py and the CLI. The symbols avoid
+// quotes and backslashes, which are awkward in shells and config files.
+const PW_CLASSES = ["abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "0123456789", "!@#$%^&*()-_=+"];
+const PW_ALPHABET = PW_CLASSES.join("");
+
+// RFC 1123 hostname, mirroring the server-side check in webapp.py.
+const HOSTNAME_RE = /^(?:(?!-)[a-z0-9-]{1,63}(?<!-)\.)+(?!\d+\.?$)(?!-)[a-z0-9-]{1,63}(?<!-)\.?$/i;
+
+let apiAvailable = false;
 
 /* ---------- Shared helpers ---------- */
 
@@ -52,6 +73,8 @@ function el(tag, attrs = {}, text) {
   return node;
 }
 
+const toHex = (buffer) => Array.from(new Uint8Array(buffer), (b) => b.toString(16).padStart(2, "0")).join("");
+
 /* ---------- Header ---------- */
 
 const header = $("siteHeader");
@@ -70,21 +93,29 @@ if ("IntersectionObserver" in window) {
   ["top", "hash", "dns", "password"].forEach((id) => io.observe($(id)));
 }
 
-async function checkHealth() {
-  const status = $("apiStatus");
-  const text = status.querySelector(".nav-status-text");
+// Relative path, so it resolves to /api/health under webapp.py and to a
+// harmless 404 on GitHub Pages.
+async function detectApi() {
+  // GitHub Pages never has the API, so don't make a request that can only 404.
+  const staticHost = location.hostname.endsWith(".github.io");
   try {
-    const response = await fetch("/api/health", { cache: "no-store" });
-    if (!response.ok) throw new Error();
-    status.className = "nav-status is-online";
-    text.textContent = "API online";
+    if (staticHost) throw new Error("static host");
+    const response = await fetch("api/health", { cache: "no-store" });
+    const body = response.ok ? await response.json() : null;
+    apiAvailable = body?.status === "ok";
   } catch {
-    status.className = "nav-status is-offline";
-    text.textContent = "API offline";
+    apiAvailable = false;
   }
+  const status = $("apiStatus");
+  status.className = "nav-status is-online";
+  status.querySelector(".nav-status-text").textContent = apiAvailable ? "Local API" : "Browser mode";
+  status.title = apiAvailable
+    ? "DNS lookups use your system resolver through webapp.py."
+    : "Everything runs in this page. DNS lookups use Cloudflare DNS-over-HTTPS.";
+  $("dnsBlurb").textContent = apiAvailable
+    ? "List the IPv4 and IPv6 addresses your system resolver returns."
+    : "List the IPv4 and IPv6 addresses for a domain, looked up over encrypted DNS through Cloudflare.";
 }
-checkHealth();
-setInterval(checkHealth, 30000);
 
 /* ---------- Fingerprint ---------- */
 
@@ -98,7 +129,7 @@ const bars = Array.from({ length: 32 }, (_, n) => {
 });
 signature.classList.add("is-idle");
 
-const hashState = { digest: "", source: "", revision: 0 };
+const hashState = { digest: "", revision: 0 };
 const expectedInput = $("expected");
 
 function normalizedExpected() {
@@ -157,32 +188,35 @@ function renderDigest() {
 
 function setMeta(text) { $("digestMeta").textContent = text; }
 
+function secureContextMissing() {
+  if (globalThis.crypto?.subtle) return false;
+  hashState.digest = "";
+  setMeta("Hashing needs a secure context. Open this page over HTTPS or on localhost.");
+  renderDigest();
+  return true;
+}
+
 async function hashText() {
-  const text = $("hashText").value;
   const revision = ++hashState.revision;
-  try {
-    const response = await fetch("/api/hash", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    if (revision !== hashState.revision) return;
-    if (!response.ok) throw new Error(await errorMessage(response, "The server could not hash that text."));
-    const body = await response.json();
-    hashState.digest = body.hash;
-    setMeta(`SHA-256 of ${formatBytes(body.bytes)} of UTF-8 text`);
-  } catch (err) {
-    if (revision !== hashState.revision) return;
+  if (secureContextMissing()) return;
+  const text = $("hashText").value;
+  if (text.length > MAX_TEXT_CHARS) {
     hashState.digest = "";
-    setMeta(err instanceof TypeError ? "Cannot reach the API. Is the server running?" : err.message);
+    setMeta("That text is over 1,000,000 characters. Save it to a file and use the File tab.");
+    return renderDigest();
   }
+  const bytes = new TextEncoder().encode(text);
+  const buffer = await crypto.subtle.digest("SHA-256", bytes);
+  if (revision !== hashState.revision) return;
+  hashState.digest = toHex(buffer);
+  setMeta(`SHA-256 of ${formatBytes(bytes.length)} of UTF-8 text, hashed in this browser`);
   renderDigest();
 }
 
 let textTimer;
 $("hashText").addEventListener("input", () => {
   clearTimeout(textTimer);
-  textTimer = setTimeout(hashText, 180);
+  textTimer = setTimeout(hashText, 120);
 });
 
 async function hashFile(file) {
@@ -193,16 +227,12 @@ async function hashFile(file) {
     setMeta(`${formatBytes(file.size)} is over the 256 MB browser limit. Use the CLI for large files.`);
     return renderDigest();
   }
-  if (!globalThis.crypto?.subtle) {
-    hashState.digest = "";
-    setMeta("File hashing needs a secure context. Open the dashboard on localhost or HTTPS.");
-    return renderDigest();
-  }
+  if (secureContextMissing()) return;
   setMeta(`Hashing ${file.name}`);
   try {
     const buffer = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
     if (revision !== hashState.revision) return;
-    hashState.digest = Array.from(new Uint8Array(buffer), (b) => b.toString(16).padStart(2, "0")).join("");
+    hashState.digest = toHex(buffer);
     setMeta(`${file.name}, ${formatBytes(file.size)}, hashed locally`);
   } catch {
     if (revision !== hashState.revision) return;
@@ -265,6 +295,29 @@ hashText();
 
 /* ---------- DNS ---------- */
 
+class LookupError extends Error {}
+
+async function resolveWithApi(domain) {
+  const response = await fetch(`api/dns?domain=${encodeURIComponent(domain)}`);
+  if (!response.ok) throw new LookupError(await errorMessage(response, "The lookup failed. Try again."));
+  const body = await response.json();
+  return { domain: body.domain, ipv4: body.ipv4, ipv6: body.ipv6 };
+}
+
+async function resolveWithDoh(domain) {
+  const query = async (type) => {
+    const url = `${DOH_URL}?name=${encodeURIComponent(domain)}&type=${type}`;
+    const response = await fetch(url, { headers: { accept: "application/dns-json" } });
+    if (!response.ok) throw new LookupError("The DNS service did not answer. Try again in a moment.");
+    return response.json();
+  };
+  const [a, aaaa] = await Promise.all([query("A"), query("AAAA")]);
+  if (a.Status === 3) throw new LookupError("No DNS records found for that domain.");
+  // Answers include CNAMEs on the way to the address; keep only A (1) and AAAA (28).
+  const pick = (res, type) => [...new Set((res.Answer || []).filter((r) => r.type === type).map((r) => r.data))].sort();
+  return { domain, ipv4: pick(a, 1), ipv6: pick(aaaa, 28) };
+}
+
 function recordGroup(title, addresses) {
   const group = el("div", { class: "rec-group" });
   group.appendChild(el("h3", {}, `${title} (${addresses.length})`));
@@ -286,32 +339,34 @@ async function lookup(domain) {
   const result = $("dnsResult");
   const button = $("dnsButton");
   const input = $("dnsInput");
-  domain = domain.trim();
-  if (!domain) {
-    input.setAttribute("aria-invalid", "true");
-    result.replaceChildren(el("p", { class: "error" }, "Enter a domain to look up, such as example.com."));
-    return input.focus();
-  }
+  domain = domain.trim().toLowerCase();
+
+  const fail = (message, invalid) => {
+    input.setAttribute("aria-invalid", String(invalid));
+    result.replaceChildren(el("p", { class: "error" }, message));
+  };
+  if (!domain) { fail("Enter a domain to look up, such as example.com.", true); return input.focus(); }
+  if (domain.length > 253 || !HOSTNAME_RE.test(domain)) return fail("Enter a valid domain name, such as example.com.", true);
+
   input.setAttribute("aria-invalid", "false");
   button.disabled = true;
   button.textContent = "Looking up";
   const started = performance.now();
   try {
-    const response = await fetch(`/api/dns?domain=${encodeURIComponent(domain)}`);
-    if (!response.ok) throw new Error(await errorMessage(response, "The lookup failed. Try again."));
-    const body = await response.json();
+    const records = apiAvailable ? await resolveWithApi(domain) : await resolveWithDoh(domain);
+    const total = records.ipv4.length + records.ipv6.length;
+    if (!total) throw new LookupError("No DNS records found for that domain.");
     const ms = Math.round(performance.now() - started);
     const head = el("div", { class: "rec-head" });
-    head.appendChild(el("b", {}, body.domain));
-    head.appendChild(el("span", { class: "meta" }, `${body.ip_addresses.length} address${body.ip_addresses.length === 1 ? "" : "es"} in ${ms} ms`));
+    head.appendChild(el("b", {}, records.domain));
+    head.appendChild(el("span", { class: "meta" }, `${total} address${total === 1 ? "" : "es"} in ${ms} ms`));
     const parts = [head];
-    if (body.ipv4.length) parts.push(recordGroup("IPv4", body.ipv4));
-    if (body.ipv6.length) parts.push(recordGroup("IPv6", body.ipv6));
+    if (records.ipv4.length) parts.push(recordGroup("IPv4", records.ipv4));
+    if (records.ipv6.length) parts.push(recordGroup("IPv6", records.ipv6));
     result.replaceChildren(...parts);
   } catch (err) {
-    const message = err instanceof TypeError ? "Cannot reach the API. Is the server running?" : err.message;
-    if (!(err instanceof TypeError)) input.setAttribute("aria-invalid", "true");
-    result.replaceChildren(el("p", { class: "error" }, message));
+    if (err instanceof LookupError) fail(err.message, true);
+    else fail("Couldn't reach a DNS service. Check your connection and try again.", false);
   } finally {
     button.disabled = false;
     button.textContent = "Look up";
@@ -329,6 +384,25 @@ document.querySelectorAll("[data-domain]").forEach((b) => b.addEventListener("cl
 }));
 
 /* ---------- Password ---------- */
+
+// Unbiased index in [0, n) from the CSPRNG, by rejecting values that
+// would make the modulo favour low indexes.
+function randomIndex(n) {
+  const limit = Math.floor(0x100000000 / n) * n;
+  const buf = new Uint32Array(1);
+  do { crypto.getRandomValues(buf); } while (buf[0] >= limit);
+  return buf[0] % n;
+}
+
+function makePassword(length) {
+  const chars = PW_CLASSES.map((set) => set[randomIndex(set.length)]);
+  while (chars.length < length) chars.push(PW_ALPHABET[randomIndex(PW_ALPHABET.length)]);
+  for (let i = chars.length - 1; i > 0; i--) { // Fisher-Yates
+    const j = randomIndex(i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
+}
 
 const range = $("pwLength");
 const number = $("pwLengthNum");
@@ -360,34 +434,25 @@ function renderPassword() {
   pwOut.textContent = masked ? "•".repeat(Math.min(currentPassword.length, 48)) : currentPassword;
 }
 
-let pwRevision = 0;
-async function generatePassword() {
+function generatePassword() {
   const length = clampLength(number.value);
-  const revision = ++pwRevision;
-  try {
-    const response = await fetch(`/api/password?length=${length}`, { cache: "no-store" });
-    if (!response.ok) throw new Error(await errorMessage(response, "Could not generate a password."));
-    const body = await response.json();
-    if (revision !== pwRevision) return;
-    currentPassword = body.password;
-    const bits = Math.floor(length * Math.log2(PASSWORD_ALPHABET));
-    $("pwMeta").textContent = `${length} characters, about ${bits} bits of entropy. ${strengthLabel(bits)}.`;
-    $("strengthBar").style.width = `${Math.min(100, (bits / 160) * 100)}%`;
-  } catch (err) {
-    if (revision !== pwRevision) return;
+  if (!globalThis.crypto?.getRandomValues) {
     currentPassword = "";
-    $("pwMeta").textContent = err instanceof TypeError ? "Cannot reach the API. Is the server running?" : err.message;
+    $("pwMeta").textContent = "This browser has no secure random source, so no password was generated.";
     $("strengthBar").style.width = "0%";
+    return renderPassword();
   }
+  currentPassword = makePassword(length);
+  const bits = Math.floor(length * Math.log2(PW_ALPHABET.length));
+  $("pwMeta").textContent = `${length} characters, about ${bits} bits of entropy. ${strengthLabel(bits)}.`;
+  $("strengthBar").style.width = `${Math.min(100, (bits / 160) * 100)}%`;
   renderPassword();
 }
 
-let pwTimer;
 range.addEventListener("input", () => {
   number.value = range.value;
   syncRangeFill();
-  clearTimeout(pwTimer);
-  pwTimer = setTimeout(generatePassword, 120);
+  generatePassword();
 });
 number.addEventListener("change", () => {
   const length = clampLength(number.value);
@@ -407,3 +472,4 @@ reveal.addEventListener("click", () => {
 
 syncRangeFill();
 generatePassword();
+detectApi();
