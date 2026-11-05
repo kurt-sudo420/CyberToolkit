@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102820">
+  <meta name="description" content="A hands-on defensive security lab. Fingerprint files on your device and explore five Python security utilities.">
+  <title>CyberToolkit • File integrity lab</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="lab.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to workspace</a>
+<header><div class="bar"><b><span class="mark" aria-hidden="true">⌁</span> CyberToolkit</b><a href="https://github.com/kurt-sudo420/CyberToolkit">Source code ↗</a></div></header>
+<main id="main">
+  <section class="intro">
+    <div><p class="tag">FIELD MANUAL &nbsp;/&nbsp; LAB 01</p><h1>File integrity<span>.</span></h1>
+    <p class="lede">Fingerprint a file and check its contents against a trusted SHA-256 digest. Every byte stays on your device.</p></div>
+    <div class="plate" aria-hidden="true"><div class="rings"><i></i></div><small>FIG. 01 &nbsp; / &nbsp; BYTE SIGNATURE</small></div>
+  </section>
+  <section class="bench" aria-label="File integrity workspace">
+    <div class="panel"><p class="tag">01 &nbsp;/&nbsp; INPUT</p><h2>Select evidence</h2>
+      <label for="file">Local file <small>Up to 32 MiB</small></label><input type="file" id="file">
+      <label for="expected">Expected SHA-256 <small>Optional</small></label>
+      <input id="expected" type="text" placeholder="64 hexadecimal characters" spellcheck="false" autocomplete="off" autocapitalize="none">
+      <div class="actions"><button id="hash" type="button">Hash file →</button><button id="sample" type="button">Try sample</button></div>
+      <noscript>Enable JavaScript to use the local hashing tool.</noscript>
+    </div>
+    <div class="panel output"><p class="tag">02 &nbsp;/&nbsp; READOUT</p><h2>Digest report</h2>
+      <div role="status" aria-live="polite"><strong id="state">Awaiting input</strong><p id="detail">Select a file or try the three-byte sample “abc”.</p><code id="digest"></code></div>
+      <p class="note">A match confirms the bytes agree. Get the reference digest from a publisher or another trusted channel.</p>
+    </div>
+  </section>
+  <section class="manual"><p class="tag">FIELD NOTES &nbsp;/&nbsp; PYTHON CLI</p><h2>Inside the toolkit</h2>
+    <div class="rows"><article><b>01–02 / Inspect</b><p>Check TCP ports and read escaped service banners on systems you have permission to test.</p></article>
+    <article><b>03–04 / Protect</b><p>Hash large files in chunks or generate a password with Python’s cryptographic random source.</p></article>
+    <article><b>05 / Resolve</b><p>Look up IPv4 and IPv6 addresses through your system resolver.</p></article></div>
+  </section>
+</main><footer>CyberToolkit &nbsp;/&nbsp; Defensive security field manual</footer>
+</body></html>
