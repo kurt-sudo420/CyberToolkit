@@ -29,6 +29,11 @@ class WebAppTests(unittest.TestCase):
         self.assertIn("default-src 'none'", response.headers["content-security-policy"])
         self.assertEqual(response.headers["x-frame-options"], "DENY")
 
+    def test_dashboard_assets_are_served(self):
+        for path in ("/app.js", "/style.css", "/fonts/exo2-wght.woff2"):
+            with self.subTest(path=path):
+                self.assertEqual(self.client.get(path).status_code, 200)
+
     def test_hash_text(self):
         response = self.client.post("/api/hash", json={"text": "abc"})
         self.assertEqual(response.status_code, 200)

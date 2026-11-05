@@ -2,8 +2,9 @@
 
 A small FastAPI app that puts three of the CLI's utilities behind a local
 web interface: SHA-256 hashing, DNS lookup, and password generation. File
-hashing happens entirely in the browser with Web Crypto; the server only
-ever sees text you choose to hash.
+The interface lives in docs/ so GitHub Pages can host it as a static site.
+In the browser it hashes and generates passwords itself; when served from
+here it also uses this API's system resolver for DNS lookups.
 
 The port scanner and banner grabber are deliberately left out. Exposing
 outbound network probes through an HTTP endpoint turns the server into a
@@ -22,11 +23,10 @@ import string
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-BASE_DIR = Path(__file__).resolve().parent
+DOCS_DIR = Path(__file__).resolve().parent / "docs"
 
 MAX_TEXT_CHARS = 1_000_000
 PASSWORD_MIN, PASSWORD_MAX, PASSWORD_DEFAULT = 8, 256, 20
@@ -125,9 +125,5 @@ def generate_password(length: int = Query(PASSWORD_DEFAULT, ge=PASSWORD_MIN, le=
     return {"password": "".join(chars), "length": length}
 
 
-app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
-
-
-@app.get("/", include_in_schema=False)
-def dashboard():
-    return FileResponse(BASE_DIR / "templates" / "index.html")
+# Mounted last so the /api routes above take precedence.
+app.mount("/", StaticFiles(directory=DOCS_DIR, html=True), name="dashboard")
